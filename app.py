@@ -6,6 +6,30 @@ import streamlit.components.v1 as components
 
 from analysis import *
 
+st.markdown("""
+<style>
+div[data-testid="metric-container"] {
+    background-color: #161B22;
+    border: 1px solid #30363D;
+    padding: 18px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0px 0px 8px rgba(0,0,0,0.3);
+}
+
+div[data-testid="metric-container"] > label {
+    font-size: 14px;
+    color: #C9D1D9;
+}
+
+div[data-testid="metric-container"] > div {
+    font-size: 26px;
+    font-weight: bold;
+    color: #58A6FF;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # ======================================================
 # PAGE CONFIGURATION
@@ -110,6 +134,27 @@ kpi3.metric("Unique Artists", kpis["UniqueArtists"])
 kpi4.metric("Collaboration Ratio", f"{round(kpis['CollaborationRatio'] * 100, 1)}%")
 kpi5.metric("Explicit Content Share", f"{round(kpis['ExplicitShare'] * 100, 1)}%")
 kpi6.metric("Content Variety Index", round(kpis["ContentVariety"], 2))
+
+st.markdown("## Executive Market Summary")
+
+st.info("""
+### UK Market Intelligence Summary
+
+• The UK Top 50 playlist shows moderate to high artist concentration, indicating dominance by a limited group of top performers.
+
+• Collaborative tracks demonstrate stronger visibility in premium chart positions, highlighting the importance of strategic partnerships.
+
+• Clean content consistently performs better in higher ranking positions, reflecting UK listener sensitivity toward mainstream radio-friendly tracks.
+
+• Single-based releases dominate playlist entries, suggesting that frequent single launches outperform traditional album-focused strategies.
+
+### Strategic Recommendations
+
+✔ Prioritize high-impact artist signings  
+✔ Encourage cross-artist collaborations  
+✔ Focus on single-first release strategies  
+✔ Maintain cultural content alignment for the UK market
+""")
 
 
 # ======================================================
