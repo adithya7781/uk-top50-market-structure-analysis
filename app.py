@@ -106,7 +106,7 @@ fig1 = px.bar(
     title="Top 15 Artists by Playlist Presence"
 )
 
-st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig1, width="stretch")
 
 # ----------------------
 # Explicit Content Analysis
@@ -120,7 +120,7 @@ fig2 = px.pie(
     title="Explicit Content Share"
 )
 
-st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig2, width="stretch")
 
 # Rank Distribution
 
@@ -131,7 +131,7 @@ fig3 = px.box(
     title="Rank Distribution: Explicit vs Clean"
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig3, width="stretch")
 
 # ----------------------
 # Album Strategy Analysis
@@ -144,7 +144,7 @@ fig4 = px.bar(
     title="Release Format Dominance"
 )
 
-st.plotly_chart(fig4, use_container_width=True)
+st.plotly_chart(fig4, width="stretch")
 
 # Album size vs presence
 
@@ -155,7 +155,7 @@ fig5 = px.scatter(
     title="Album Size vs Chart Position"
 )
 
-st.plotly_chart(fig5, use_container_width=True)
+st.plotly_chart(fig5, width="stretch")
 
 # ----------------------
 # Track Duration Insights
@@ -169,7 +169,7 @@ fig6 = px.histogram(
     title="Track Duration Distribution"
 )
 
-st.plotly_chart(fig6, use_container_width=True)
+st.plotly_chart(fig6, width="stretch")
 
 fig7 = px.scatter(
     filtered,
@@ -178,7 +178,7 @@ fig7 = px.scatter(
     title="Duration vs Popularity"
 )
 
-st.plotly_chart(fig7, use_container_width=True)
+st.plotly_chart(fig7, width="stretch")
 
 # ----------------------
 # Collaboration Network
@@ -199,4 +199,3 @@ if len(G.nodes) > 0:
 
 else:
     st.info("No collaborations found for selected filters.")
-
