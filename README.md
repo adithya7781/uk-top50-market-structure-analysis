@@ -54,7 +54,7 @@ Access the deployed Streamlit application:
 
 Project walkthrough video:
 
-👉 VIDEO_LINK_HERE
+👉 https://drive.google.com/file/d/14yueH34dhbrf8BcFaj2KwcqcDEtx9VBd/view?usp=sharing
 
 ---
 
