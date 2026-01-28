@@ -37,7 +37,8 @@ def load_full_pipeline():
     return df, artist_level_df
 
 
-track_data, artist_data = load_full_pipeline()
+with st.spinner("Loading UK Market Structure Analysis....."):
+    track_data, artist_data = load_full_pipeline()
 
 
 # ======================================================
@@ -127,6 +128,12 @@ artist_chart = px.bar(
 
 st.plotly_chart(artist_chart, width="stretch")
 
+st.markdown("""
+### Market Insight
+- A higher concentration among top artists indicates strong superstar dominance in the UK market.
+- Labels can prioritize premium artist signings and focused promotional investments.
+""")
+
 
 # ======================================================
 # EXPLICIT CONTENT ANALYSIS
@@ -152,6 +159,12 @@ explicit_rank_box = px.box(
 
 st.plotly_chart(explicit_rank_box, width="stretch")
 
+st.markdown("""
+### Content Localization Insight
+- Clean tracks consistently perform better in higher chart positions.
+- This indicates UK listener sensitivity toward radio-friendly and mainstream content.
+""")
+
 
 # ======================================================
 # ALBUM STRATEGY ANALYSIS
@@ -175,6 +188,12 @@ album_size_scatter = px.scatter(
 )
 
 st.plotly_chart(album_size_scatter, width="stretch")
+
+st.markdown("""
+### Release Strategy Insight
+- Singles dominate playlist presence compared to album tracks.
+- UK market favors frequent single releases over full-album launch strategies.
+""")
 
 
 # ======================================================
@@ -200,6 +219,12 @@ duration_popularity = px.scatter(
 )
 
 st.plotly_chart(duration_popularity, width="stretch")
+
+st.markdown("""
+### Listener Preference Insight
+- Medium-duration tracks show higher engagement and popularity.
+- Extremely long tracks tend to perform weaker on curated playlists.
+""")
 
 
 # ======================================================
