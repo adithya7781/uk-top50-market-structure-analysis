@@ -1,201 +1,223 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from analysis import *
 from pyvis.network import Network
 import streamlit.components.v1 as components
 
-# ----------------------
-# Page Config
-# ----------------------
+from analysis import *
 
-st.set_page_config(page_title="UK Top 50 Market Analysis", layout="wide")
 
-st.title("United Kingdom Top 50 Playlist Market Structure Analysis")
+# ======================================================
+# PAGE CONFIGURATION
+# ======================================================
 
-# ----------------------
-# Load Data (Cached)
-# ----------------------
+st.set_page_config(
+    page_title="UK Top 50 Market Structure Analysis",
+    layout="wide"
+)
+
+st.title("United Kingdom Top 50 Playlist Market Structure Dashboard")
+
+
+# ======================================================
+# DATA PIPELINE (CACHED FOR PERFORMANCE)
+# ======================================================
 
 @st.cache_data
-def load_pipeline():
+def load_full_pipeline():
+
     df = load_data("data/Atlantic_United_Kingdom.csv")
-    df = normalize_artists(df)
-    artist_df = explode_artists(df)
-    df = duration_analysis(df)
-    df = rank_groups(df)
-    return df, artist_df
+    df = normalize_artist_names(df)
+
+    artist_level_df = create_artist_level_table(df)
+
+    df = add_duration_features(df)
+    df = create_rank_groups(df)
+
+    return df, artist_level_df
 
 
-df, artist_df = load_pipeline()
+track_data, artist_data = load_full_pipeline()
 
-# ----------------------
-# Sidebar Filters
-# ----------------------
 
-st.sidebar.header("Filters")
+# ======================================================
+# SIDEBAR FILTERS
+# ======================================================
+
+st.sidebar.header("Dashboard Filters")
 
 date_range = st.sidebar.date_input(
-    "Date Range",
-    [df.date.min(), df.date.max()]
+    "Select Date Range",
+    [track_data.date.min(), track_data.date.max()]
 )
 
 album_filter = st.sidebar.multiselect(
     "Album Type",
-    df.album_type.unique(),
-    default=df.album_type.unique()
+    track_data.album_type.unique(),
+    default=track_data.album_type.unique()
 )
 
 artist_filter = st.sidebar.multiselect(
-    "Select Artist",
-    sorted(df.artist.unique())
+    "Artist Filter",
+    sorted(track_data.artist.unique())
 )
 
-collab_toggle = st.sidebar.selectbox(
+track_type_filter = st.sidebar.selectbox(
     "Track Type",
     ["All", "Solo Only", "Collaborations Only"]
 )
 
-# ----------------------
-# Apply Filters
-# ----------------------
 
-filtered = df[
-    (df["date"] >= pd.to_datetime(date_range[0])) &
-    (df["date"] <= pd.to_datetime(date_range[1])) &
-    (df["album_type"].isin(album_filter))
+# ======================================================
+# APPLY FILTERS
+# ======================================================
+
+filtered_data = track_data[
+    (track_data["date"] >= pd.to_datetime(date_range[0])) &
+    (track_data["date"] <= pd.to_datetime(date_range[1])) &
+    (track_data["album_type"].isin(album_filter))
 ]
 
 if artist_filter:
-    filtered = filtered[filtered["artist"].isin(artist_filter)]
+    filtered_data = filtered_data[filtered_data["artist"].isin(artist_filter)]
 
-if collab_toggle == "Solo Only":
-    filtered = filtered[~filtered["artist"].str.contains("&")]
+if track_type_filter == "Solo Only":
+    filtered_data = filtered_data[~filtered_data["artist"].str.contains("&")]
 
-elif collab_toggle == "Collaborations Only":
-    filtered = filtered[filtered["artist"].str.contains("&")]
+elif track_type_filter == "Collaborations Only":
+    filtered_data = filtered_data[filtered_data["artist"].str.contains("&")]
 
-filtered_artist_df = explode_artists(filtered)
+filtered_artist_data = create_artist_level_table(filtered_data)
 
-# ----------------------
-# KPI Section
-# ----------------------
 
-kpis, artist_counts = calculate_kpis(filtered, filtered_artist_df)
+# ======================================================
+# KPI COMPUTATION
+# ======================================================
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+kpis, artist_frequency = calculate_market_kpis(filtered_data, filtered_artist_data)
 
-col1.metric("Artist Concentration Index", round(kpis["ACI"],3))
-col2.metric("Top 5 Artist Share", f"{round(kpis['Top5']*100,1)}%")
-col3.metric("Unique Artists", kpis["UniqueArtists"])
-col4.metric("Collaboration Ratio", f"{round(kpis['CollaborationRatio']*100,1)}%")
-col5.metric("Explicit Content Share", f"{round(kpis['ExplicitShare']*100,1)}%")
-col6.metric("Content Variety Index", round(kpis["ContentVariety"],2))
 
-# ----------------------
-# Artist Dominance Leaderboard
-# ----------------------
+# ======================================================
+# KPI DISPLAY SECTION
+# ======================================================
+
+kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
+
+kpi1.metric("Artist Concentration Index", round(kpis["ACI"], 3))
+kpi2.metric("Top 5 Artist Share", f"{round(kpis['Top5Share'] * 100, 1)}%")
+kpi3.metric("Unique Artists", kpis["UniqueArtists"])
+kpi4.metric("Collaboration Ratio", f"{round(kpis['CollaborationRatio'] * 100, 1)}%")
+kpi5.metric("Explicit Content Share", f"{round(kpis['ExplicitShare'] * 100, 1)}%")
+kpi6.metric("Content Variety Index", round(kpis["ContentVariety"], 2))
+
+
+# ======================================================
+# ARTIST DOMINANCE LEADERBOARD
+# ======================================================
 
 st.subheader("Artist Dominance Leaderboard")
 
-top_artists = artist_counts.head(15)
+top_artists = artist_frequency.head(15)
 
-fig1 = px.bar(
+artist_chart = px.bar(
     top_artists,
     orientation="h",
-    title="Top 15 Artists by Playlist Presence"
+    title="Top Artists by Playlist Presence"
 )
 
-st.plotly_chart(fig1, width="stretch")
+st.plotly_chart(artist_chart, width="stretch")
 
-# ----------------------
-# Explicit Content Analysis
-# ----------------------
 
-st.subheader("Explicit vs Clean Content")
+# ======================================================
+# EXPLICIT CONTENT ANALYSIS
+# ======================================================
 
-fig2 = px.pie(
-    filtered,
+st.subheader("Explicit Content Performance")
+
+explicit_pie = px.pie(
+    filtered_data,
     names="is_explicit",
-    title="Explicit Content Share"
+    title="Explicit vs Clean Content Share"
 )
 
-st.plotly_chart(fig2, width="stretch")
+st.plotly_chart(explicit_pie, width="stretch")
 
-# Rank Distribution
 
-fig3 = px.box(
-    filtered,
+explicit_rank_box = px.box(
+    filtered_data,
     x="is_explicit",
     y="position",
-    title="Rank Distribution: Explicit vs Clean"
+    title="Chart Rank Distribution by Content Type"
 )
 
-st.plotly_chart(fig3, width="stretch")
+st.plotly_chart(explicit_rank_box, width="stretch")
 
-# ----------------------
-# Album Strategy Analysis
-# ----------------------
 
-st.subheader("Single vs Album Distribution")
+# ======================================================
+# ALBUM STRATEGY ANALYSIS
+# ======================================================
 
-fig4 = px.bar(
-    filtered["album_type"].value_counts(),
-    title="Release Format Dominance"
+st.subheader("Release Format Strategy")
+
+album_chart = px.bar(
+    filtered_data["album_type"].value_counts(),
+    title="Single vs Album Presence"
 )
 
-st.plotly_chart(fig4, width="stretch")
+st.plotly_chart(album_chart, width="stretch")
 
-# Album size vs presence
 
-fig5 = px.scatter(
-    filtered,
+album_size_scatter = px.scatter(
+    filtered_data,
     x="total_tracks",
     y="position",
     title="Album Size vs Chart Position"
 )
 
-st.plotly_chart(fig5, width="stretch")
+st.plotly_chart(album_size_scatter, width="stretch")
 
-# ----------------------
-# Track Duration Insights
-# ----------------------
 
-st.subheader("Track Duration Analysis")
+# ======================================================
+# TRACK DURATION INSIGHTS
+# ======================================================
 
-fig6 = px.histogram(
-    filtered,
+st.subheader("Track Duration Patterns")
+
+duration_hist = px.histogram(
+    filtered_data,
     x="duration_bucket",
     title="Track Duration Distribution"
 )
 
-st.plotly_chart(fig6, width="stretch")
+st.plotly_chart(duration_hist, width="stretch")
 
-fig7 = px.scatter(
-    filtered,
-    x="duration_min",
+
+duration_popularity = px.scatter(
+    filtered_data,
+    x="duration_minutes",
     y="popularity",
-    title="Duration vs Popularity"
+    title="Track Duration vs Popularity"
 )
 
-st.plotly_chart(fig7, width="stretch")
+st.plotly_chart(duration_popularity, width="stretch")
 
-# ----------------------
-# Collaboration Network
-# ----------------------
+
+# ======================================================
+# COLLABORATION NETWORK VISUALIZATION
+# ======================================================
 
 st.subheader("Artist Collaboration Network")
 
-G = build_collaboration_network(filtered)
+network_graph = build_artist_collaboration_network(filtered_data)
 
-if len(G.nodes) > 0:
+if len(network_graph.nodes) > 0:
 
-    net = Network(height="500px", bgcolor="white")
-    net.from_nx(G)
-    net.save_graph("network.html")
+    network = Network(height="500px", bgcolor="#0E1117", font_color="white")
+    network.from_nx(network_graph)
+    network.save_graph("network.html")
 
-    HtmlFile = open("network.html", "r", encoding="utf-8")
-    components.html(HtmlFile.read(), height=550)
+    html_file = open("network.html", "r", encoding="utf-8")
+    components.html(html_file.read(), height=550)
 
 else:
-    st.info("No collaborations found for selected filters.")
+    st.info("No collaborations available for selected filters.")
